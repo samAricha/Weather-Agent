@@ -55,48 +55,23 @@ class MainActivity : ComponentActivity() {
 fun WeatherApp() {
     val navController = rememberNavController()
 
-    Scaffold(
-        bottomBar = {
-            NavigationBar {
-                val navBackStackEntry = navController.currentBackStackEntryAsState().value
-                val currentDestination = navBackStackEntry?.destination
-
-                listOf(
-                    Screen.Weather,
-                    Screen.Chat
-                ).forEach { screen ->
-                    NavigationBarItem(
-                        icon = {
-                            Icon(
-                                screen.icon,
-                                contentDescription = screen.title
-                            )
-                        },
-                        label = { Text(screen.title) },
-                        selected = currentDestination?.hierarchy?.any { it ->
-                            it.route == screen.route
-                        } == true,
-                        onClick = {
-                            navController.navigate(screen.route) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        }
-                    )
+    NavHost(
+        navController = navController,
+        startDestination = Screen.Weather.route
+    ) {
+        composable(Screen.Weather.route) {
+            WeatherScreen(
+                onNavigateToChat = {
+                    navController.navigate(Screen.Chat.route)
                 }
-            }
+            )
         }
-    ) { innerPadding ->
-        NavHost(
-            navController = navController,
-            startDestination = Screen.Weather.route,
-            modifier = Modifier.padding(innerPadding)
-        ) {
-            composable(Screen.Weather.route) { WeatherScreen() }
-            composable(Screen.Chat.route) { WeatherChatScreen() }
+        composable(Screen.Chat.route) {
+            WeatherChatScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
         }
     }
 }
@@ -113,7 +88,7 @@ private fun SetupSystemUI() {
     SideEffect {
         systemUiController.setSystemBarsColor(
             color = Color.Transparent,
-            darkIcons = false
+            darkIcons = true
         )
     }
 }
