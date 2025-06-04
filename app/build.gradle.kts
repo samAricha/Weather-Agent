@@ -52,11 +52,17 @@ dependencies {
     implementation(libs.androidx.material3)
 
     implementation("com.squareup.retrofit2:retrofit:3.0.0")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.squareup.retrofit2:converter-gson:3.0.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.1")
     val nav_version = "2.9.0"
     implementation("androidx.navigation:navigation-compose:$nav_version")
     implementation("org.jetbrains.compose.material:material-icons-extended:1.7.3")
+
+    // System UI controller for status bar
+    implementation("com.google.accompanist:accompanist-systemuicontroller:0.32.0")
+    // Animation
+    implementation("androidx.compose.animation:animation:1.5.8")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

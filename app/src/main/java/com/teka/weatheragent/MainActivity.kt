@@ -19,7 +19,9 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -28,6 +30,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.google.accompanist.systemuicontroller.rememberSystemUiController
+import com.teka.weatheragent.presentation.chat_screen.WeatherChatScreen
 import com.teka.weatheragent.presentation.weather_screen.WeatherScreen
 import com.teka.weatheragent.ui.theme.WeatherAgentTheme
 
@@ -38,6 +42,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             WeatherAgentTheme {
+                SetupSystemUI()
                 WeatherApp()
             }
         }
@@ -91,7 +96,7 @@ fun WeatherApp() {
             modifier = Modifier.padding(innerPadding)
         ) {
             composable(Screen.Weather.route) { WeatherScreen() }
-//            composable(Screen.Chat.route) { ChatScreen() }
+            composable(Screen.Chat.route) { WeatherChatScreen() }
         }
     }
 }
@@ -100,3 +105,16 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
     object Weather : Screen("weather", "Weather", Icons.Default.Cloud)
     object Chat : Screen("chat", "Agent", Icons.Default.Chat)
 }
+
+@Composable
+private fun SetupSystemUI() {
+    val systemUiController = rememberSystemUiController()
+
+    SideEffect {
+        systemUiController.setSystemBarsColor(
+            color = Color.Transparent,
+            darkIcons = false
+        )
+    }
+}
+
