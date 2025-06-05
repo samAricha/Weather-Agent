@@ -63,6 +63,8 @@ dependencies {
     implementation("com.google.accompanist:accompanist-systemuicontroller:0.32.0")
     // Animation
     implementation("androidx.compose.animation:animation:1.5.8")
+    implementation ("androidx.core:core-splashscreen:1.0.1")
+
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

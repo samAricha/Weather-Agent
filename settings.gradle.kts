@@ -19,6 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Weather Agent"
+rootProject.name = "Sky Talk"
 include(":app")
  
