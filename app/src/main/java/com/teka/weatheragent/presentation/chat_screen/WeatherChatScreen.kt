@@ -23,7 +23,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -32,97 +31,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
-
-data class WeatherCondition(
-    val icon: ImageVector,
-    val description: String,
-    val color: Color = Color.White
-)
-
-object WeatherIconUtils {
-
-    fun detectWeatherCondition(message: String): WeatherCondition? {
-        val lowerMessage = message.lowercase()
-
-        return when {
-            // Sunny conditions
-            lowerMessage.contains("sunny") ||
-                    lowerMessage.contains("clear") ||
-                    lowerMessage.contains("bright") ||
-                    lowerMessage.contains("sunshine") ->
-                WeatherCondition(Icons.Default.WbSunny, "Sunny", Color(0xFFFFD700))
-
-            // Cloudy conditions
-            lowerMessage.contains("cloudy") ||
-                    lowerMessage.contains("overcast") ||
-                    lowerMessage.contains("clouds") ->
-                WeatherCondition(Icons.Default.Cloud, "Cloudy", Color(0xFF9CA3AF))
-
-            // Rainy conditions
-            lowerMessage.contains("rain") ||
-                    lowerMessage.contains("drizzle") ||
-                    lowerMessage.contains("shower") ||
-                    lowerMessage.contains("wet") ->
-                WeatherCondition(Icons.Default.Grain, "Rainy", Color(0xFF60A5FA))
-
-            // Snowy conditions
-            lowerMessage.contains("snow") ||
-                    lowerMessage.contains("blizzard") ||
-                    lowerMessage.contains("flurries") ->
-                WeatherCondition(Icons.Default.AcUnit, "Snowy", Color(0xFFE5E7EB))
-
-            // Windy conditions
-            lowerMessage.contains("windy") ||
-                    lowerMessage.contains("breezy") ||
-                    lowerMessage.contains("gusty") ->
-                WeatherCondition(Icons.Default.Air, "Windy", Color(0xFF10B981))
-
-            // Stormy conditions
-            lowerMessage.contains("storm") ||
-                    lowerMessage.contains("thunder") ||
-                    lowerMessage.contains("lightning") ->
-                WeatherCondition(Icons.Default.Thunderstorm, "Stormy", Color(0xFF7C3AED))
-
-            // Foggy conditions
-            lowerMessage.contains("fog") ||
-                    lowerMessage.contains("mist") ||
-                    lowerMessage.contains("hazy") ->
-                WeatherCondition(Icons.Default.CloudQueue, "Foggy", Color(0xFF6B7280))
-
-            // Hot conditions
-            lowerMessage.contains("hot") ||
-                    lowerMessage.contains("scorching") ||
-                    lowerMessage.contains("blazing") ->
-                WeatherCondition(Icons.Default.Whatshot, "Hot", Color(0xFFEF4444))
-
-            // Cold conditions
-            lowerMessage.contains("cold") ||
-                    lowerMessage.contains("freezing") ||
-                    lowerMessage.contains("chilly") ||
-                    lowerMessage.contains("frost") ->
-                WeatherCondition(Icons.Default.Thermostat, "Cold", Color(0xFF3B82F6))
-
-            // Partly cloudy
-            lowerMessage.contains("partly cloudy") ||
-                    lowerMessage.contains("partially cloudy") ||
-                    lowerMessage.contains("mixed") ->
-                WeatherCondition(Icons.Default.FilterDrama, "Partly Cloudy", Color(0xFFF59E0B))
-
-            else -> null
-        }
-    }
-
-    fun hasTemperature(message: String): Boolean {
-        return message.contains("°") ||
-                message.contains("degrees") ||
-                message.contains("temperature")
-    }
-
-    fun extractTemperatures(message: String): List<String> {
-        val temperatureRegex = """(\d+(?:\.\d+)?)\s*°[CF]?""".toRegex()
-        return temperatureRegex.findAll(message).map { it.value }.toList()
-    }
-}
 
 @Composable
 fun WeatherChatScreen(
@@ -149,50 +57,48 @@ fun WeatherChatScreen(
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
-                        Color(0xFF1E3A8A), // Deep blue
-                        Color(0xFF3B82F6), // Blue
-                        Color(0xFF60A5FA)  // Light blue
+                        Color(0xFF667eea), // Soft purple-blue
+                        Color(0xFF764ba2)  // Deep purple
                     )
                 )
             )
     ) {
-        // Header
-        EnhancedHeader(
-            isLoading = uiState.isLoading,
-            onNavigateBack = onNavigateBack // Pass the callback
-        )
+        // Simplified Header
+        CleanHeader(onNavigateBack = onNavigateBack)
+
         // Messages
         LazyColumn(
             state = listState,
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            contentPadding = PaddingValues(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             if (uiState.messages.isEmpty()) {
                 item {
-                    WelcomeMessage()
+                    WelcomeCard()
                 }
             }
 
             items(uiState.messages) { message ->
                 AnimatedVisibility(
                     visible = true,
-                    enter = slideInVertically(initialOffsetY = { 50 }) + fadeIn()
+                    enter = fadeIn(animationSpec = tween(300)) +
+                            slideInVertically(initialOffsetY = { 20 })
                 ) {
-                    EnhancedMessageBubble(message = message)
+                    CleanMessageBubble(message = message)
                 }
             }
 
             if (uiState.isLoading) {
                 item {
-                    EnhancedTypingIndicator()
+                    TypingIndicator()
                 }
             }
         }
 
-        // Input area
+        // Clean Input area
         MessageInput(
             message = uiState.currentMessage,
             onMessageChange = viewModel::updateCurrentMessage,
@@ -205,82 +111,53 @@ fun WeatherChatScreen(
     }
 }
 
-@OptIn(ExperimentalAnimationApi::class)
 @Composable
-private fun EnhancedHeader(
-    isLoading: Boolean,
-    onNavigateBack: () -> Unit
-) {
+private fun CleanHeader(onNavigateBack: () -> Unit) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = Color.Transparent
     ) {
         Row(
             modifier = Modifier
-                .padding(16.dp)
+                .padding(20.dp)
                 .statusBarsPadding(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Back button
             IconButton(
                 onClick = onNavigateBack,
-                modifier = Modifier.size(40.dp)
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.1f))
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back to weather",
+                    contentDescription = "Back",
                     tint = Color.White,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(20.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(16.dp))
 
-            // Animated header icon
-            var headerIcon by remember { mutableStateOf(Icons.Default.Cloud) }
-
-            LaunchedEffect(isLoading) {
-                if (isLoading) {
-                    val icons = listOf(
-                        Icons.Default.Cloud,
-                        Icons.Default.WbSunny,
-                        Icons.Default.Grain,
-                        Icons.Default.Air
-                    )
-                    var index = 0
-                    while (isLoading) {
-                        headerIcon = icons[index % icons.size]
-                        index++
-                        kotlinx.coroutines.delay(1000)
-                    }
-                } else {
-                    headerIcon = Icons.Default.Cloud
-                }
-            }
-
-            AnimatedContent(
-                targetState = headerIcon,
-                transitionSpec = { fadeIn() with fadeOut() },
-                label = "header_icon_transition"
-            ) { icon ->
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(32.dp)
-                )
-            }
+            Icon(
+                imageVector = Icons.Default.Cloud,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(28.dp)
+            )
 
             Spacer(modifier = Modifier.width(12.dp))
+
             Column {
                 Text(
-                    text = "Weather Agent",
+                    text = "Weather Assistant",
                     color = Color.White,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    text = if (isLoading) "Analyzing weather..." else "Ready to help",
+                    text = "Ask me anything about weather",
                     color = Color.White.copy(alpha = 0.8f),
                     fontSize = 14.sp
                 )
@@ -289,85 +166,53 @@ private fun EnhancedHeader(
     }
 }
 
-@OptIn(ExperimentalAnimationApi::class)
 @Composable
-private fun WelcomeMessage() {
+private fun WelcomeCard() {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 24.dp),
+            .padding(vertical = 20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color.White.copy(alpha = 0.1f)
+            containerColor = Color.White
         ),
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(20.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
         Column(
-            modifier = Modifier.padding(24.dp),
+            modifier = Modifier.padding(32.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Animated welcome icon
-            var welcomeIcon by remember { mutableStateOf(Icons.Default.Cloud) }
-
-            LaunchedEffect(Unit) {
-                val icons = listOf(
-                    Icons.Default.Cloud,
-                    Icons.Default.WbSunny,
-                    Icons.Default.Grain,
-                    Icons.Default.AcUnit
-                )
-                var index = 0
-                while (true) {
-                    welcomeIcon = icons[index % icons.size]
-                    index++
-                    kotlinx.coroutines.delay(2000)
-                }
-            }
-
-            AnimatedContent(
-                targetState = welcomeIcon,
-                transitionSpec = {
-                    slideInVertically { -it } + fadeIn() with
-                            slideOutVertically { it } + fadeOut()
-                },
-                label = "welcome_icon_transition"
-            ) { icon ->
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(48.dp)
-                )
-            }
+            Icon(
+                imageVector = Icons.Default.WbSunny,
+                contentDescription = null,
+                tint = Color(0xFF667eea),
+                modifier = Modifier.size(48.dp)
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
+
             Text(
-                text = "Hi! I'm your Weather Agent",
-                color = Color.White,
-                fontSize = 18.sp,
+                text = "Hello! 👋",
+                fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center
+                color = Color(0xFF2D3748)
             )
+
             Spacer(modifier = Modifier.height(8.dp))
+
             Text(
-                text = "Ask me about the weather anywhere in the world! I can provide forecasts, current conditions, and even send you detailed reports.",
-                color = Color.White.copy(alpha = 0.8f),
-                fontSize = 14.sp,
-                textAlign = TextAlign.Center
+                text = "I'm here to help you with weather information. Ask me about current conditions, forecasts, or anything weather-related!",
+                fontSize = 16.sp,
+                color = Color(0xFF4A5568),
+                textAlign = TextAlign.Center,
+                lineHeight = 22.sp
             )
         }
     }
 }
 
 @Composable
-private fun EnhancedMessageBubble(message: ChatMessage) {
-    val weatherCondition = if (!message.isFromUser) {
-        remember(message.content) { WeatherIconUtils.detectWeatherCondition(message.content) }
-    } else null
-
-    val hasTemperature = if (!message.isFromUser) {
-        remember(message.content) { WeatherIconUtils.hasTemperature(message.content) }
-    } else false
-
+private fun CleanMessageBubble(message: ChatMessage) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = if (message.isFromUser) {
@@ -379,216 +224,99 @@ private fun EnhancedMessageBubble(message: ChatMessage) {
         if (!message.isFromUser) {
             Box(
                 modifier = Modifier
-                    .size(32.dp)
+                    .size(36.dp)
                     .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.2f)),
+                    .background(Color.White),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = weatherCondition?.icon ?: Icons.Default.Cloud,
+                    imageVector = Icons.Default.Cloud,
                     contentDescription = null,
-                    tint = weatherCondition?.color ?: Color.White,
-                    modifier = Modifier.size(16.dp)
+                    tint = Color(0xFF667eea),
+                    modifier = Modifier.size(18.dp)
                 )
             }
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(12.dp))
         }
 
         Card(
-            modifier = Modifier.widthIn(max = 300.dp),
+            modifier = Modifier.widthIn(max = 280.dp),
             colors = CardDefaults.cardColors(
                 containerColor = if (message.isFromUser) {
-                    Color.White
+                    Color(0xFF667eea)
                 } else {
-                    Color.White.copy(alpha = 0.15f)
+                    Color.White
                 }
             ),
             shape = RoundedCornerShape(
-                topStart = 16.dp,
-                topEnd = 16.dp,
-                bottomStart = if (message.isFromUser) 16.dp else 4.dp,
-                bottomEnd = if (message.isFromUser) 4.dp else 16.dp
-            )
+                topStart = 20.dp,
+                topEnd = 20.dp,
+                bottomStart = if (message.isFromUser) 20.dp else 6.dp,
+                bottomEnd = if (message.isFromUser) 6.dp else 20.dp
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
-            Column(
-                modifier = Modifier.padding(12.dp)
-            ) {
-                // Weather header with animation
-                if (weatherCondition != null && !message.isFromUser) {
-                    WeatherHeader(weatherCondition = weatherCondition)
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-
-                Text(
-                    text = message.content,
-                    color = if (message.isFromUser) {
-                        Color.Black
-                    } else {
-                        Color.White
-                    },
-                    fontSize = 14.sp
-                )
-
-                // Temperature highlight
-                if (hasTemperature && !message.isFromUser) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    TemperatureHighlight(message.content)
-                }
-            }
+            Text(
+                text = message.content,
+                color = if (message.isFromUser) {
+                    Color.White
+                } else {
+                    Color(0xFF2D3748)
+                },
+                fontSize = 15.sp,
+                lineHeight = 20.sp,
+                modifier = Modifier.padding(16.dp)
+            )
         }
 
         if (message.isFromUser) {
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(12.dp))
             Box(
                 modifier = Modifier
-                    .size(32.dp)
+                    .size(36.dp)
                     .clip(CircleShape)
                     .background(Color.White.copy(alpha = 0.2f)),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = "You",
-                    color = Color.White,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun WeatherHeader(weatherCondition: WeatherCondition) {
-    Card(
-        colors = CardDefaults.cardColors(
-            containerColor = weatherCondition.color.copy(alpha = 0.2f)
-        ),
-        shape = RoundedCornerShape(12.dp)
-    ) {
-        Row(
-            modifier = Modifier.padding(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            var visible by remember { mutableStateOf(false) }
-
-            LaunchedEffect(weatherCondition) {
-                visible = true
-            }
-
-            AnimatedVisibility(
-                visible = visible,
-                enter = scaleIn() + fadeIn()
-            ) {
                 Icon(
-                    imageVector = weatherCondition.icon,
-                    contentDescription = weatherCondition.description,
-                    tint = weatherCondition.color,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            Text(
-                text = weatherCondition.description,
-                color = Color.White,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Medium
-            )
-        }
-    }
-}
-
-@Composable
-private fun TemperatureHighlight(message: String) {
-    val temperatures = WeatherIconUtils.extractTemperatures(message)
-
-    if (temperatures.isNotEmpty()) {
-        Card(
-            colors = CardDefaults.cardColors(
-                containerColor = Color(0xFF3B82F6).copy(alpha = 0.3f)
-            ),
-            shape = RoundedCornerShape(8.dp)
-        ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Thermostat,
-                    contentDescription = "Temperature",
-                    tint = Color(0xFF60A5FA),
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = temperatures.joinToString(" • "),
-                    color = Color.White,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold
+                    imageVector = Icons.Default.Person,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(18.dp)
                 )
             }
         }
     }
 }
 
-@OptIn(ExperimentalAnimationApi::class)
 @Composable
-private fun EnhancedTypingIndicator() {
+private fun TypingIndicator() {
     Row(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
-                .size(32.dp)
+                .size(36.dp)
                 .clip(CircleShape)
-                .background(Color.White.copy(alpha = 0.2f)),
+                .background(Color.White),
             contentAlignment = Alignment.Center
         ) {
-            // Enhanced animated weather icon while thinking
-            var currentIcon by remember { mutableStateOf(Icons.Default.Cloud) }
-            var currentColor by remember { mutableStateOf(Color.White) }
-
-            LaunchedEffect(Unit) {
-                val iconColorPairs = listOf(
-                    Icons.Default.Cloud to Color(0xFF9CA3AF),
-                    Icons.Default.WbSunny to Color(0xFFFFD700),
-                    Icons.Default.Grain to Color(0xFF60A5FA),
-                    Icons.Default.Air to Color(0xFF10B981),
-                    Icons.Default.AcUnit to Color(0xFFE5E7EB)
-                )
-                var index = 0
-                while (true) {
-                    kotlinx.coroutines.delay(800)
-                    val (icon, color) = iconColorPairs[index % iconColorPairs.size]
-                    currentIcon = icon
-                    currentColor = color
-                    index++
-                }
-            }
-
-            AnimatedContent(
-                targetState = currentIcon to currentColor,
-                transitionSpec = {
-                    fadeIn(animationSpec = tween(300)) with
-                            fadeOut(animationSpec = tween(300))
-                },
-                label = "weather_icon_transition"
-            ) { (icon, color) ->
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = color,
-                    modifier = Modifier.size(16.dp)
-                )
-            }
+            Icon(
+                imageVector = Icons.Default.Cloud,
+                contentDescription = null,
+                tint = Color(0xFF667eea),
+                modifier = Modifier.size(18.dp)
+            )
         }
-        Spacer(modifier = Modifier.width(8.dp))
+
+        Spacer(modifier = Modifier.width(12.dp))
+
         Card(
             colors = CardDefaults.cardColors(
-                containerColor = Color.White.copy(alpha = 0.15f)
+                containerColor = Color.White
             ),
-            shape = RoundedCornerShape(16.dp, 16.dp, 16.dp, 4.dp)
+            shape = RoundedCornerShape(20.dp, 20.dp, 20.dp, 6.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
             Row(
                 modifier = Modifier.padding(16.dp),
@@ -596,15 +324,15 @@ private fun EnhancedTypingIndicator() {
             ) {
                 repeat(3) { index ->
                     val alpha by animateFloatAsState(
-                        targetValue = if ((System.currentTimeMillis() / 500) % 3 == index.toLong()) 1f else 0.3f,
-                        animationSpec = tween(500),
-                        label = "dot_animation_$index"
+                        targetValue = if ((System.currentTimeMillis() / 600) % 3 == index.toLong()) 1f else 0.3f,
+                        animationSpec = tween(600),
+                        label = "dot_$index"
                     )
                     Box(
                         modifier = Modifier
-                            .size(8.dp)
+                            .size(6.dp)
                             .clip(CircleShape)
-                            .background(Color.White.copy(alpha = alpha))
+                            .background(Color(0xFF667eea).copy(alpha = alpha))
                     )
                     if (index < 2) Spacer(modifier = Modifier.width(4.dp))
                 }
@@ -613,7 +341,6 @@ private fun EnhancedTypingIndicator() {
     }
 }
 
-@OptIn(ExperimentalAnimationApi::class)
 @Composable
 private fun MessageInput(
     message: String,
@@ -623,11 +350,11 @@ private fun MessageInput(
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        color = Color.White.copy(alpha = 0.1f)
+        color = Color.Black.copy(alpha = 0.1f)
     ) {
         Row(
             modifier = Modifier
-                .padding(16.dp)
+                .padding(20.dp)
                 .navigationBarsPadding(),
             verticalAlignment = Alignment.Bottom
         ) {
@@ -637,49 +364,46 @@ private fun MessageInput(
                 modifier = Modifier.weight(1f),
                 placeholder = {
                     Text(
-                        text = "Ask about weather conditions...",
-                        color = Color.White.copy(alpha = 0.6f)
+                        text = "Type your weather question...",
+                        color = Color.White.copy(alpha = 0.7f)
                     )
                 },
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedTextColor = Color.White,
                     unfocusedTextColor = Color.White,
-                    focusedBorderColor = Color.White.copy(alpha = 0.5f),
-                    unfocusedBorderColor = Color.White.copy(alpha = 0.3f),
+                    focusedBorderColor = Color.White.copy(alpha = 0.8f),
+                    unfocusedBorderColor = Color.White.copy(alpha = 0.4f),
                     cursorColor = Color.White
                 ),
-                shape = RoundedCornerShape(24.dp),
+                shape = RoundedCornerShape(28.dp),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-                keyboardActions = KeyboardActions(onSend = { onSendMessage() }),
-                maxLines = 3
+                keyboardActions = KeyboardActions(onSend = {
+                    if (message.isNotBlank() && !isLoading) onSendMessage()
+                }),
+                maxLines = 4
             )
 
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(12.dp))
 
             FloatingActionButton(
                 onClick = onSendMessage,
-                modifier = Modifier.size(48.dp),
+                modifier = Modifier.size(56.dp),
                 containerColor = Color.White,
-                contentColor = Color(0xFF1E3A8A),
-                // enabled = message.isNotBlank() && !isLoading
+                contentColor = Color(0xFF667eea),
+                elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 4.dp)
             ) {
-                AnimatedContent(
-                    targetState = isLoading,
-                    transitionSpec = { fadeIn() with fadeOut() },
-                    label = "send_button_animation"
-                ) { loading ->
-                    if (loading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            color = Color(0xFF1E3A8A),
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.Send,
-                            contentDescription = "Send message"
-                        )
-                    }
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = Color(0xFF667eea),
+                        strokeWidth = 2.5.dp
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.Send,
+                        contentDescription = "Send message",
+                        modifier = Modifier.size(24.dp)
+                    )
                 }
             }
         }
